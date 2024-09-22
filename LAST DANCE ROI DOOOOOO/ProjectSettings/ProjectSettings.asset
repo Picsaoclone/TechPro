@@ -646,23 +646,23 @@ PlayerSettings:
   webGLMemoryGeometricGrowthCap: 96
   webGLPowerPreference: 2
   scriptingDefineSymbols:
-    Android: DOTWEEN
-    EmbeddedLinux: DOTWEEN
-    GameCoreScarlett: DOTWEEN
-    GameCoreXboxOne: DOTWEEN
-    LinuxHeadlessSimulation: DOTWEEN
-    Nintendo Switch: DOTWEEN
-    PS4: DOTWEEN
-    PS5: DOTWEEN
-    QNX: DOTWEEN
-    Stadia: DOTWEEN
-    Standalone: DOTWEEN
-    VisionOS: DOTWEEN
-    WebGL: DOTWEEN
-    Windows Store Apps: DOTWEEN
-    XboxOne: DOTWEEN
-    iPhone: DOTWEEN
-    tvOS: DOTWEEN
+    Android: DOTWEEN;CC_TOOLS;READY_PLAYER_ME
+    EmbeddedLinux: DOTWEEN;CC_TOOLS;READY_PLAYER_ME
+    GameCoreScarlett: DOTWEEN;CC_TOOLS;READY_PLAYER_ME
+    GameCoreXboxOne: DOTWEEN;CC_TOOLS;READY_PLAYER_ME
+    LinuxHeadlessSimulation: DOTWEEN;CC_TOOLS;READY_PLAYER_ME
+    Nintendo Switch: DOTWEEN;CC_TOOLS;READY_PLAYER_ME
+    PS4: DOTWEEN;CC_TOOLS;READY_PLAYER_ME
+    PS5: DOTWEEN;CC_TOOLS;READY_PLAYER_ME
+    QNX: DOTWEEN;CC_TOOLS;READY_PLAYER_ME
+    Stadia: DOTWEEN;CC_TOOLS;READY_PLAYER_ME
+    Standalone: DOTWEEN;CC_TOOLS;READY_PLAYER_ME
+    VisionOS: DOTWEEN;CC_TOOLS;READY_PLAYER_ME
+    WebGL: DOTWEEN;CC_TOOLS;READY_PLAYER_ME
+    Windows Store Apps: DOTWEEN;CC_TOOLS;READY_PLAYER_ME
+    XboxOne: DOTWEEN;CC_TOOLS;READY_PLAYER_ME
+    iPhone: DOTWEEN;CC_TOOLS;READY_PLAYER_ME
+    tvOS: DOTWEEN;CC_TOOLS;READY_PLAYER_ME
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend: {}

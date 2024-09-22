@@ -26,15 +26,42 @@ public class PlayerInteract : Interactable
     [SerializeField]
     private Button buyButton;
 
-    // Placeholder for the object details
+    // Shopping cart icon and counter
     [SerializeField]
-    private Sprite object2Image;
+    private Image shoppingCartIcon;
     [SerializeField]
-    private string object2Description = "A rare diamond sphere with mystical powers.";
-    [SerializeField]
-    private float object2Price = 100f;
+    private TextMeshProUGUI cartItemCountText;
+    private int cartItemCount = 0;
 
-    private Camera cameraControl; // Reference to the camera control script
+    private Camera cameraControl;
+
+    [System.Serializable]
+    public struct ObjectDetails
+    {
+        public Sprite image;
+        public string description;
+        public float price;
+        public string name;
+    }
+
+    [SerializeField]
+    private ObjectDetails[] objects;
+
+    private ObjectDetails currentObject;
+
+    [SerializeField]
+    private GameObject notificationTextObject;
+    [SerializeField]
+    private TextMeshProUGUI notificationText;
+
+    // Examination variables
+    private bool isExamining = false;
+    private GameObject examinedObject;
+    private Vector3 lastMousePosition;
+    [SerializeField]
+    private GameObject offset; // The position where the object moves when examined
+    private Vector3 originalPosition;
+    private Quaternion originalRotation;
 
     void Start()
     {
@@ -42,14 +69,29 @@ public class PlayerInteract : Interactable
         cam = GetComponent<PlayerLook>().cam;
         playerUI = GetComponent<PlayerUI>();
         inputManager = GetComponent<InputManager>();
-        shopPanel.SetActive(false);  // Make sure the shop panel is hidden at the start
+        shopPanel.SetActive(false);
 
-        // Assign the Buy button click listener
+        // Buy button setup
+        buyButton.onClick.RemoveAllListeners();
         buyButton.onClick.AddListener(OnBuyButtonClick);
+
+        // Initialize cart UI
+        UpdateCartUI();
     }
 
     void Update()
     {
+        // Handle examination
+        if (isExamining)
+        {
+            RotateExaminedObject();
+            if (Input.GetKeyDown(KeyCode.F)) // Press "F" to stop examining
+            {
+                StopExamination();
+            }
+            return; // Skip raycast and other interactions while examining
+        }
+
         playerUI.UpdateText(string.Empty, string.Empty);
 
         Ray ray = new Ray(cam.transform.position, cam.transform.forward);
@@ -68,12 +110,20 @@ public class PlayerInteract : Interactable
                 if (hitInfo.collider.gameObject.CompareTag("Object1"))
                 {
                     promptMessage = interactable.promptMessage;
-                    additionalMessage = "Press 'E' to open the shop!";
+                    additionalMessage = "Press 'E' to view details, Press 'F' to examine";
+                    currentObject = objects[0];
                 }
                 else if (hitInfo.collider.gameObject.CompareTag("Object2"))
                 {
                     promptMessage = interactable.promptMessage;
-                    additionalMessage = "Rare diamond Sphere - Press 'E' to view details!";
+                    additionalMessage = "Press 'E' to view details, Press 'F' to examine";
+                    currentObject = objects[1];
+                }
+                else if (hitInfo.collider.gameObject.CompareTag("Object3"))
+                {
+                    promptMessage = interactable.promptMessage;
+                    additionalMessage = "Press 'E' to view details, Press 'F' to examine";
+                    currentObject = objects[2];
                 }
 
                 playerUI.UpdateText(promptMessage, additionalMessage);
@@ -81,11 +131,11 @@ public class PlayerInteract : Interactable
                 if (inputManager.onFoot.Interact.triggered)
                 {
                     interactable.BaseInteract();
-
-                    if (hitInfo.collider.gameObject.CompareTag("Object2"))
-                    {
-                        OpenShopPanel();
-                    }
+                    OpenShopPanel();
+                }
+                else if (Input.GetKeyDown(KeyCode.F))
+                {
+                    StartExamination(hitInfo.collider.gameObject);
                 }
             }
         }
@@ -93,33 +143,112 @@ public class PlayerInteract : Interactable
 
     private void OpenShopPanel()
     {
-        objectImage.sprite = object2Image;
-        descriptionText.text = object2Description;
-        priceText.text = "Price: $" + object2Price.ToString("F2");
+        objectImage.sprite = currentObject.image;
+        descriptionText.text = currentObject.description;
+        priceText.text = "Price: " + currentObject.price.ToString("N0") + " VND";
 
-        // Open the shop panel
         shopPanel.SetActive(true);
 
-        // Disable camera movement and unlock the cursor
         LockCursorr.SetCursorState(false);
         cameraControl.enabled = false;
     }
 
-    private List<string> shoppingCart = new List<string>();
+    private bool hasBoughtItem = false;
 
     private void OnBuyButtonClick()
     {
-        // Add the item to the shopping cart
-        shoppingCart.Add("Object2 - Rare Diamond Sphere");
+        if (!hasBoughtItem)
+        {
+            hasBoughtItem = true;
 
-        // Log to console
-        Debug.Log("Object2 added to the shopping cart!");
+            cartItemCount++;
+            UpdateCartUI();
 
-        // Close the shop panel after purchase
-        shopPanel.SetActive(false);
+            ShowPurchaseNotification("Item purchased successfully!");
 
-        // Re-enable camera movement and lock the cursor
-        LockCursorr.SetCursorState(true);
-        cameraControl.enabled = true;
+            shopPanel.SetActive(false);
+            LockCursorr.SetCursorState(true);
+            cameraControl.enabled = true;
+
+            // Reset mouse position to the center of the screen
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+
+            StartCoroutine(ResetBuyFlag());
+        }
+    }
+
+    private void ShowPurchaseNotification(string message)
+    {
+        notificationTextObject.SetActive(true);
+        notificationText.text = message;
+
+        StartCoroutine(HideNotification());
+    }
+
+    private IEnumerator HideNotification()
+    {
+        yield return new WaitForSeconds(2f);
+        notificationTextObject.SetActive(false);
+    }
+
+    private IEnumerator ResetBuyFlag()
+    {
+        yield return new WaitForSeconds(0.5f);
+        hasBoughtItem = false;
+    }
+
+    private void UpdateCartUI()
+    {
+        // Update the shopping cart icon with the item count
+        cartItemCountText.text = cartItemCount.ToString();
+    }
+
+    // Examination methods
+    private void StartExamination(GameObject obj)
+    {
+        isExamining = true;
+        examinedObject = obj;
+        lastMousePosition = Input.mousePosition;
+
+        // Save original position and rotation
+        originalPosition = examinedObject.transform.position;
+        originalRotation = examinedObject.transform.rotation;
+
+        // Move the object to the offset position
+        examinedObject.transform.position = offset.transform.position;
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+    }
+
+    private void StopExamination()
+    {
+        isExamining = false;
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+
+        // Reset object position and rotation
+        if (examinedObject != null)
+        {
+            examinedObject.transform.position = originalPosition;
+            examinedObject.transform.rotation = originalRotation;
+        }
+
+        examinedObject = null;
+    }
+
+    private void RotateExaminedObject()
+    {
+        if (examinedObject != null)
+        {
+            float rotationSpeed = 150f; // Adjust rotation speed
+            Vector3 mouseDelta = Input.mousePosition - lastMousePosition;
+
+            // Rotate object based on mouse movement
+            examinedObject.transform.Rotate(Vector3.up, mouseDelta.x * rotationSpeed * Time.deltaTime, Space.World);
+            examinedObject.transform.Rotate(Vector3.right, -mouseDelta.y * rotationSpeed * Time.deltaTime, Space.World);
+
+            lastMousePosition = Input.mousePosition;
+        }
     }
 }
